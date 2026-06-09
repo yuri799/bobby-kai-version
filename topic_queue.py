@@ -30,6 +30,10 @@ def save_queue(items: list[dict]) -> None:
 AGENT_FIELDS = ("source", "pool_id", "trend_score", "trend_reason", "research_area")
 
 
+def _int_with_default(value, default: int) -> int:
+    return default if value is None else int(value)
+
+
 def normalize_job(data: dict, *, item_id: str | None = None) -> dict:
     item = {
         "id": item_id or data.get("id") or uuid.uuid4().hex[:12],
@@ -38,8 +42,8 @@ def normalize_job(data: dict, *, item_id: str | None = None) -> dict:
         "keyword": (data.get("keyword") or "").strip(),
         "subtitle": (data.get("subtitle") or "").strip(),
         "format": (data.get("format") or "newsletter").strip(),
-        "word_count": max(300, min(5000, int(data.get("word_count") or 1200))),
-        "image_count": max(0, min(6, int(data.get("image_count") or 2))),
+        "word_count": max(300, min(5000, _int_with_default(data.get("word_count"), 1200))),
+        "image_count": max(0, min(6, _int_with_default(data.get("image_count"), 2))),
         "audience": (data.get("audience") or "everyone").strip(),
         "status": (data.get("status") or "pending").strip(),
         "created_at": data.get("created_at") or _now(),

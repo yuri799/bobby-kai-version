@@ -33,3 +33,13 @@ def test_replace_queue_preserves_order(tmp_path, monkeypatch):
     assert [item["topic"] for item in replaced] == ["Second", "First"]
     saved = json.loads(queue_file.read_text(encoding="utf-8"))
     assert saved[0]["topic"] == "Second"
+
+
+def test_add_queue_item_preserves_zero_images(tmp_path, monkeypatch):
+    queue_file = tmp_path / "topics_queue.json"
+    monkeypatch.setattr(topic_queue, "QUEUE_FILE", queue_file)
+
+    item = topic_queue.add_item({"topic": "No images", "image_count": 0})
+
+    assert item["image_count"] == 0
+    assert topic_queue.load_queue()[0]["image_count"] == 0
