@@ -36,8 +36,19 @@ function switchView(name) {
 }
 
 async function readJson(response) {
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Something went wrong.");
+  const text = await response.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!response.ok) {
+        throw new Error(text);
+      }
+      throw new Error("The server returned an invalid response.");
+    }
+  }
+  if (!response.ok) throw new Error(data.error || text || "Something went wrong.");
   return data;
 }
 
