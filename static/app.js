@@ -289,7 +289,7 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#prepare").addEventListener("click", async () => {
+async function prepareCopies() {
   if (!editor.value.trim()) {
     showToast("Write or generate a draft first.", "error");
     return;
@@ -308,6 +308,10 @@ document.querySelector("#prepare").addEventListener("click", async () => {
   } catch (error) {
     showToast(error.message, "error");
   }
+}
+
+document.querySelectorAll(".prepare-copy-btn").forEach((button) => {
+  button.addEventListener("click", prepareCopies);
 });
 
 async function copyValue(key, button) {

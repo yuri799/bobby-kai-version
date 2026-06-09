@@ -107,13 +107,17 @@
           <span id="count" class="muted">0 words</span>
         </div>
         <div class="draft-toolbar-right">
-          <button class="btn btn-primary btn-sm" id="prepare" type="button">Prepare copies</button>
+          <button class="btn btn-primary btn-sm prepare-copy-btn" type="button">Prepare copies</button>
         </div>
       </div>
 
       <div class="draft-body panel">
         <textarea id="editor" class="editor" spellcheck="true" placeholder="Generate an article from the Create tab, or paste a draft here."></textarea>
         <article id="preview" class="preview" hidden></article>
+      </div>
+
+      <div class="draft-bottom-actions">
+        <button class="btn btn-primary prepare-copy-btn" type="button">Prepare copies</button>
       </div>
 
       <div id="publish-drawer" class="publish-drawer" hidden>
