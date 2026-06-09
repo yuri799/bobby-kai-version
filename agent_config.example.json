@@ -1,0 +1,39 @@
+{
+  "enabled": true,
+  "research_areas": [
+    "AI writing assistants and workflows for creators",
+    "Newsletter and Substack growth tactics for writers",
+    "Practical comparisons of leading AI writing tools"
+  ],
+  "schedule": {
+    "timezone": "America/New_York",
+    "research_time": "06:00",
+    "draft_time": "07:00",
+    "articles_per_day": 1
+  },
+  "research": {
+    "provider": "deepseek",
+    "model": "deepseek-chat",
+    "topics_per_area": 3,
+    "lookback_days": 7
+  },
+  "selection": {
+    "auto_pick": true,
+    "min_trend_score": 6,
+    "max_pool_age_days": 14
+  },
+  "article_defaults": {
+    "format": "newsletter",
+    "word_count": 1200,
+    "image_count": 2,
+    "auto_substack_draft": false,
+    "audience": "everyone"
+  },
+  "runtime": {
+    "last_research_at": null,
+    "last_research_date": null,
+    "last_draft_at": null,
+    "last_draft_date": null,
+    "drafts_created_today": 0
+  }
+}

@@ -1,0 +1,10 @@
+.env
+topics_queue.json
+topic_pool.json
+agent_config.json
+agent_log.jsonl
+.venv/
+__pycache__/
+*.pyc
+static/generated/*
+!static/generated/.gitkeep

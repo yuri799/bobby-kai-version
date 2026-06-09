@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ profile.get('publication_name', 'Editorial Studio') }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">W</span>
+        <div>
+          <strong>{{ profile.get('publication_name', 'Editorial Studio') }}</strong>
+          <span>AI writing studio</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Main">
+        <button class="nav-btn active" data-view="create" type="button">Create</button>
+        <button class="nav-btn" data-view="draft" type="button">Draft</button>
+        <button class="nav-btn" data-view="queue" type="button">Queue <span id="queue-count" class="pill">0</span></button>
+        <button class="nav-btn" data-view="agent" type="button">Agent</button>
+      </nav>
+      <div class="topbar-meta">{{ stats.words }} words in voice library</div>
+    </header>
+
+    <p id="toast" class="toast" role="status" aria-live="polite"></p>
+
+    <!-- CREATE -->
+    <section id="view-create" class="view active">
+      <div class="panel">
+        <h1>New article</h1>
+        <p class="lede">Describe what to write. The studio drafts in Bobby's voice and can save straight to Substack.</p>
+
+        <form id="generate-form" class="create-form">
+          <label class="field">
+            <span>Topic</span>
+            <input id="topic" type="text" placeholder="e.g. How to outline a newsletter with AI" required>
+          </label>
+
+          <label class="field">
+            <span>Direction <small>Optional but recommended</small></span>
+            <textarea id="brief" rows="4" placeholder="Angle, key points, examples to include, what to avoid..."></textarea>
+          </label>
+
+          <details class="options">
+            <summary>Options</summary>
+            <div class="options-grid">
+              <label class="field">
+                <span>Format</span>
+                <select id="format">
+                  <option value="newsletter" selected>Newsletter (Substack)</option>
+                  <option value="blog">Website article</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Length</span>
+                <select id="word-count">
+                  <option value="800">~800 words</option>
+                  <option value="1200" selected>~1,200 words</option>
+                  <option value="1800">~1,800 words</option>
+                  <option value="2500">~2,500 words</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Images</span>
+                <select id="image-count">
+                  <option value="0">None</option>
+                  <option value="1">1</option>
+                  <option value="2" selected>2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Subtitle</span>
+                <input id="subtitle" placeholder="Substack subtitle">
+              </label>
+              <label class="field span-2">
+                <span>SEO phrase</span>
+                <input id="keyword" placeholder="Optional">
+              </label>
+            </div>
+          </details>
+
+          <div class="create-actions">
+            <button class="btn btn-primary" id="generate" type="submit">Generate</button>
+            <button class="btn btn-ghost" id="queue-add" type="button">Add to queue</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- DRAFT -->
+    <section id="view-draft" class="view">
+      <div class="draft-toolbar">
+        <div class="draft-toolbar-left">
+          <div class="segmented">
+            <button class="segmented-btn active" data-editor-view="edit" type="button">Edit</button>
+            <button class="segmented-btn" data-editor-view="preview" type="button">Preview</button>
+          </div>
+          <span id="count" class="muted">0 words</span>
+        </div>
+        <div class="draft-toolbar-right">
+          <button class="btn btn-primary btn-sm" id="prepare" type="button">Prepare copies</button>
+        </div>
+      </div>
+
+      <div class="draft-body panel">
+        <textarea id="editor" class="editor" spellcheck="true" placeholder="Generate an article from the Create tab, or paste a draft here."></textarea>
+        <article id="preview" class="preview" hidden></article>
+      </div>
+
+      <div id="publish-drawer" class="publish-drawer" hidden>
+        <h3>Copy for other platforms</h3>
+        <div class="export-row">
+          <span>WordPress</span>
+          <button class="btn btn-ghost btn-sm" id="copy-gutenberg" disabled>Copy blocks</button>
+        </div>
+        <div class="export-row">
+          <span>Substack HTML</span>
+          <button class="btn btn-ghost btn-sm" id="copy-substack" disabled>Copy HTML</button>
+        </div>
+        <div class="export-row">
+          <span>Markdown</span>
+          <button class="btn btn-ghost btn-sm" id="copy-markdown" disabled>Copy .md</button>
+        </div>
+      </div>
+
+      <div id="image-results" class="image-strip" hidden>
+        <h3>Generated images</h3>
+        <div id="image-list" class="image-list"></div>
+      </div>
+    </section>
+
+    <!-- AGENT -->
+    <section id="view-agent" class="view">
+      <div class="panel agent-panel">
+        <div class="queue-header">
+          <div>
+            <h1>Editorial agent</h1>
+            <p class="lede">Researches trends, fills a topic pool, picks winners, and drafts to Substack on your schedule.</p>
+          </div>
+          <button class="btn btn-primary" id="agent-run" type="button">Run now</button>
+        </div>
+        <div id="agent-status" class="agent-status"></div>
+
+        <form id="agent-config-form" class="agent-config">
+          <h2 class="config-heading">Settings</h2>
+
+          <label class="toggle-field">
+            <input id="agent-enabled" type="checkbox">
+            <span>Agent enabled</span>
+          </label>
+
+          <fieldset class="config-group">
+            <legend>Schedule</legend>
+            <div class="config-grid">
+              <label class="field">
+                <span>Timezone</span>
+                <input id="agent-timezone" type="text" placeholder="America/New_York">
+              </label>
+              <label class="field">
+                <span>Research time</span>
+                <input id="agent-research-time" type="time" required>
+              </label>
+              <label class="field">
+                <span>Draft time</span>
+                <input id="agent-draft-time" type="time" required>
+              </label>
+              <label class="field">
+                <span>Articles per day</span>
+                <input id="agent-articles-per-day" type="number" min="1" max="10" required>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="config-group">
+            <legend>Research</legend>
+            <label class="field">
+              <span>Research areas <small>One topic area per line</small></span>
+              <textarea id="agent-research-areas" rows="5" required></textarea>
+            </label>
+            <div class="config-grid">
+              <label class="field">
+                <span>DeepSeek model</span>
+                <select id="agent-research-model">
+                  <option value="deepseek-chat">deepseek-chat</option>
+                  <option value="deepseek-reasoner">deepseek-reasoner</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Topics per area</span>
+                <input id="agent-topics-per-area" type="number" min="1" max="10" required>
+              </label>
+              <label class="field">
+                <span>Lookback days</span>
+                <input id="agent-lookback-days" type="number" min="1" max="30" required>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="config-group">
+            <legend>Topic selection</legend>
+            <label class="toggle-field">
+              <input id="agent-auto-pick" type="checkbox">
+              <span>Auto-pick best topics from pool</span>
+            </label>
+            <div class="config-grid">
+              <label class="field">
+                <span>Min trend score (1–10)</span>
+                <input id="agent-min-trend-score" type="number" min="1" max="10" required>
+              </label>
+              <label class="field">
+                <span>Max pool age (days)</span>
+                <input id="agent-max-pool-age" type="number" min="1" max="60" required>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="config-group">
+            <legend>Generated articles</legend>
+            <div class="config-grid">
+              <label class="field">
+                <span>Format</span>
+                <select id="agent-format">
+                  <option value="newsletter">Newsletter</option>
+                  <option value="blog">Website article</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Word count</span>
+                <input id="agent-word-count" type="number" min="300" max="5000" step="100" required>
+              </label>
+              <label class="field">
+                <span>Images</span>
+                <input id="agent-image-count" type="number" min="0" max="6" required>
+              </label>
+              <label class="field">
+                <span>Substack audience</span>
+                <select id="agent-audience">
+                  <option value="everyone">Everyone</option>
+                  <option value="only_paid">Paid only</option>
+                  <option value="only_free">Free only</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="agent-config-actions">
+            <button class="btn btn-primary" id="agent-save" type="submit">Save settings</button>
+          </div>
+        </form>
+
+        <p class="agent-note">For unattended daily runs, schedule <code>python agent.py run</code> in Task Scheduler at your draft time.</p>
+      </div>
+    </section>
+
+    <!-- QUEUE -->
+    <section id="view-queue" class="view">
+      <div class="panel">
+        <div class="queue-header">
+          <div>
+            <h1>Topic queue</h1>
+            <p class="lede">Batch articles. Each run creates a Substack draft for review.</p>
+          </div>
+          <button class="btn btn-primary" id="queue-run-next" type="button">Run next</button>
+        </div>
+        <ul id="queue-list" class="queue-list"></ul>
+        <p id="queue-empty" class="empty-state">No topics queued. Add one from the Create tab.</p>
+      </div>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
