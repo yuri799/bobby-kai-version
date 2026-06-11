@@ -12,8 +12,8 @@
     "articles_per_day": 1
   },
   "research": {
-    "provider": "deepseek",
-    "model": "deepseek-chat",
+    "provider": "perplexity",
+    "model": "sonar-pro",
     "topics_per_area": 3,
     "lookback_days": 7
   },

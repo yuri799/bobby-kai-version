@@ -6,20 +6,20 @@ import re
 
 from openai import OpenAI
 
-DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
 
-def deepseek_client() -> OpenAI:
-    api_key = os.getenv("DEEPSEEK_API_KEY")
+def perplexity_client() -> OpenAI:
+    api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY is not configured.")
-    return OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
+        raise RuntimeError("PERPLEXITY_API_KEY is not configured.")
+    return OpenAI(api_key=api_key, base_url=PERPLEXITY_BASE_URL)
 
 
 def research_area(
     area: str,
     *,
-    model: str = "deepseek-chat",
+    model: str = "sonar-pro",
     lookback_days: int = 7,
     publication: str = "Writing With AI",
     audience: str = "writers and creators",
@@ -36,14 +36,13 @@ Focus on the last {lookback_days} days. Cover:
 - gaps where a helpful how-to or explainer would stand out
 
 Be specific. Name real tools, trends, and reader problems where possible."""
-    response = deepseek_client().chat.completions.create(
+    response = perplexity_client().chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        extra_body={"thinking": {"type": "disabled"}},
     )
     content = response.choices[0].message.content
     if not content:
-        raise RuntimeError(f"DeepSeek returned empty research for: {area}")
+        raise RuntimeError(f"Perplexity returned empty research for: {area}")
     return content.strip()
 
 

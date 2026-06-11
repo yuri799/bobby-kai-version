@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -45,3 +46,17 @@ def test_research_due_after_scheduled_time(monkeypatch):
 
     monkeypatch.setattr(agent_config, "datetime", FakeDateTime)
     assert agent_config.research_due(config) is True
+
+
+def test_load_config_migrates_agent_research_to_perplexity(tmp_path, monkeypatch):
+    config_file = tmp_path / "agent_config.json"
+    config_file.write_text(
+        json.dumps({"research": {"provider": "deepseek", "model": "deepseek-chat"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(agent_config, "CONFIG_FILE", config_file)
+
+    config = agent_config.load_config()
+
+    assert config["research"]["provider"] == "perplexity"
+    assert config["research"]["model"] == "sonar-pro"

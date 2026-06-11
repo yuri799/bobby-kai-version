@@ -8,7 +8,7 @@
 
 This is a **local web app + automation scripts** for **Writing With AI** (Bobby Kania). It helps:
 
-1. **Research** what’s trending in AI + writing (via DeepSeek)
+1. **Research** what’s trending in AI + writing (via Perplexity)
 2. **Suggest article topics** from that research
 3. **Write articles** in Bobby’s voice (via DeepSeek)
 4. **Generate images** for articles (via OpenAI)
@@ -80,8 +80,8 @@ When you run `python agent.py run` (or click **Run now** in the Agent tab), this
 
 ### Step 1 — Research (`research.py`)
 
-- For each string in `research_areas` (in `agent_config.json`), the app asks **DeepSeek** (`deepseek-chat`) what’s timely in that space (last N days).
-- DeepSeek returns research notes (trends, tools, reader questions).
+- For each string in `research_areas` (in `agent_config.json`), the app asks **Perplexity** (`sonar-pro`) what’s timely in that space (last N days).
+- Perplexity returns web-grounded research notes (trends, tools, reader questions).
 
 ### Step 2 — Topic extraction (DeepSeek)
 
@@ -175,8 +175,8 @@ All secrets go in **`.env`** (copy from `.env.example`). Never commit `.env`.
 
 | Variable | Service | Used for |
 |----------|---------|----------|
-
-| `DEEPSEEK_API_KEY` | [DeepSeek API](https://api.deepseek.com) | Agent research + article writing |
+| `PERPLEXITY_API_KEY` | [Perplexity Sonar](https://docs.perplexity.ai/) | Agent research |
+| `DEEPSEEK_API_KEY` | [DeepSeek API](https://api.deepseek.com) | Topic extraction + article writing |
 | `OPENAI_API_KEY` | OpenAI | Article images (`gpt-image-2`) |
 | `EMAIL` + `PASSWORD` | Substack (via python-substack) | Creating drafts |
 | `PUBLICATION_URL` | Substack | Which newsletter (e.g. `https://writingwithai.substack.com`) |
@@ -227,7 +227,7 @@ Substack has **no official publish API**. This uses an unofficial client; it can
 | `app.py` | Flask server, API routes, article + image generation |
 | `agent.py` | CLI for agent: `status`, `research`, `pick`, `draft`, `run` |
 | `agent_config.py` | Load/save agent config, schedule logic |
-| `research.py` | DeepSeek research + topic JSON |
+| `research.py` | Perplexity research + DeepSeek topic JSON |
 | `topic_pool.py` | CRUD for researched ideas |
 | `topic_queue.py` | CRUD for the work queue |
 | `substack_publish.py` | Substack authentication + draft creation |
@@ -327,7 +327,7 @@ Runs on port `5000` (change with `PORT` in `.env`).
 
 ```powershell
 python agent.py status      # Show pool, queue, schedule state
-python agent.py research    # DeepSeek → topic pool only
+python agent.py research    # Perplexity → topic pool only
 python agent.py pick        # Move best topics from pool → queue
 python agent.py draft       # Generate queue items → Substack drafts
 python agent.py run         # Full daily cycle (respects schedule)
@@ -386,7 +386,7 @@ The Flask app exposes JSON endpoints:
     "articles_per_day": 1
   },
   "research": {
-    "model": "deepseek-chat",
+    "model": "sonar-pro",
     "topics_per_area": 3,
     "lookback_days": 7
   },
@@ -408,7 +408,7 @@ The Flask app exposes JSON endpoints:
 | Field | What it does |
 |-------|----------------|
 | `enabled` | `false` stops `agent.py run` (not `--force`) |
-| `research_areas` | List of strings DeepSeek researches each day |
+| `research_areas` | List of strings Perplexity researches each day |
 | `topics_per_area` | How many article ideas to extract per area |
 | `min_trend_score` | Pool items below this score are never auto-picked |
 | `auto_pick` | If `false`, research fills pool but nothing moves to queue automatically |

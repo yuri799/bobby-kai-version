@@ -90,7 +90,7 @@ def cmd_research(*, force: bool = False) -> int:
         log_event("research_start", message=area)
         notes = research_area(
             area,
-            model=research_cfg.get("model", "deepseek-chat"),
+            model=research_cfg.get("model", "sonar-pro"),
             lookback_days=int(research_cfg.get("lookback_days", 7)),
             publication=profile.get("publication_name", "Writing With AI"),
             audience=profile.get("audience", "writers"),

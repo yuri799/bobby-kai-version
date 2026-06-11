@@ -352,7 +352,7 @@ function fillAgentConfigForm(config) {
   document.querySelector("#agent-draft-time").value = toTimeInputValue(config.schedule?.draft_time);
   document.querySelector("#agent-articles-per-day").value = String(config.schedule?.articles_per_day ?? 1);
   document.querySelector("#agent-research-areas").value = (config.research_areas || []).join("\n");
-  document.querySelector("#agent-research-model").value = config.research?.model || "deepseek-chat";
+  document.querySelector("#agent-research-model").value = config.research?.model || "sonar-pro";
   document.querySelector("#agent-topics-per-area").value = String(config.research?.topics_per_area ?? 3);
   document.querySelector("#agent-lookback-days").value = String(config.research?.lookback_days ?? 7);
   document.querySelector("#agent-auto-pick").checked = Boolean(config.selection?.auto_pick);

@@ -9,6 +9,12 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).parent
 CONFIG_FILE = ROOT / "agent_config.json"
 EXAMPLE_FILE = ROOT / "agent_config.example.json"
+PERPLEXITY_MODELS = {
+    "sonar",
+    "sonar-pro",
+    "sonar-deep-research",
+    "sonar-reasoning-pro",
+}
 
 DEFAULT_CONFIG = {
     "enabled": True,
@@ -24,8 +30,8 @@ DEFAULT_CONFIG = {
         "articles_per_day": 1,
     },
     "research": {
-        "provider": "deepseek",
-        "model": "deepseek-chat",
+        "provider": "perplexity",
+        "model": "sonar-pro",
         "topics_per_area": 3,
         "lookback_days": 7,
     },
@@ -64,7 +70,14 @@ def _merge(default: dict, data: dict) -> dict:
 def load_config() -> dict:
     if CONFIG_FILE.exists():
         data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        return _merge(DEFAULT_CONFIG, data)
+        config = _merge(DEFAULT_CONFIG, data)
+        if (
+            config["research"].get("provider") != "perplexity"
+            or config["research"].get("model") not in PERPLEXITY_MODELS
+        ):
+            config["research"]["provider"] = "perplexity"
+            config["research"]["model"] = "sonar-pro"
+        return config
     if EXAMPLE_FILE.exists():
         data = json.loads(EXAMPLE_FILE.read_text(encoding="utf-8"))
         return _merge(DEFAULT_CONFIG, data)
@@ -114,8 +127,10 @@ def apply_config_updates(current: dict, updates: dict) -> dict:
         research["lookback_days"] = max(
             1, min(30, int(research.get("lookback_days", 7)))
         )
-        research["provider"] = "deepseek"
-        research["model"] = str(research.get("model", "deepseek-chat")).strip() or "deepseek-chat"
+        research["provider"] = "perplexity"
+        research["model"] = str(research.get("model", "sonar-pro")).strip() or "sonar-pro"
+        if research["model"] not in PERPLEXITY_MODELS:
+            research["model"] = "sonar-pro"
         merged["research"] = research
 
     if "selection" in updates:
