@@ -351,7 +351,7 @@ def api_queue_delete(item_id: str):
 def _run_queue_item(item: dict) -> dict:
     update_item(item["id"], {"status": "running", "error": None})
     try:
-        result = run_generation_job(item, push_substack=True)
+        result = run_generation_job(item, push_substack=False)
         draft = result.get("substack") or {}
         update_item(
             item["id"],
@@ -360,6 +360,8 @@ def _run_queue_item(item: dict) -> dict:
                 "last_run_at": datetime.now(timezone.utc).isoformat(),
                 "substack_draft_id": draft.get("draft_id"),
                 "substack_edit_url": draft.get("edit_url"),
+                "article_md": result.get("article_md"),
+                "images": result.get("images") or [],
                 "error": None,
             },
         )
@@ -443,7 +445,9 @@ def api_agent_run():
     force = (request.get_json(silent=True) or {}).get("force", True)
     try:
         exit_code = cmd_run(force=bool(force))
-        return jsonify({"ok": exit_code == 0, "status": agent_status()})
+        if exit_code != 0:
+            return jsonify({"error": "Agent run failed. Check the Queue item for details."}), 500
+        return jsonify({"ok": True, "status": agent_status()})
     except Exception as exc:
         app.logger.exception("Agent run failed")
         return jsonify({"error": str(exc)}), 500

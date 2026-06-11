@@ -43,3 +43,17 @@ def test_add_queue_item_preserves_zero_images(tmp_path, monkeypatch):
 
     assert item["image_count"] == 0
     assert topic_queue.load_queue()[0]["image_count"] == 0
+
+
+def test_update_queue_item_preserves_generated_draft(tmp_path, monkeypatch):
+    queue_file = tmp_path / "topics_queue.json"
+    monkeypatch.setattr(topic_queue, "QUEUE_FILE", queue_file)
+    item = topic_queue.add_item({"topic": "Generated article"})
+
+    updated = topic_queue.update_item(
+        item["id"],
+        {"status": "done", "article_md": "# Draft\n\nBody", "images": []},
+    )
+
+    assert updated["article_md"] == "# Draft\n\nBody"
+    assert topic_queue.load_queue()[0]["article_md"] == "# Draft\n\nBody"

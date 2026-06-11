@@ -77,6 +77,14 @@ function applyBrief(item) {
   showToast("Brief loaded. Edit if needed, then generate.", "done");
 }
 
+function openQueueDraft(item) {
+  editor.value = item.article_md || "";
+  updateCount();
+  renderImages(item.images || []);
+  switchView("draft");
+  showToast("Draft loaded from the Queue.", "done");
+}
+
 function applyGenerationResult(data, successMessage) {
   editor.value = data.article_md;
   exportsReady = data;
@@ -174,8 +182,13 @@ function renderQueue() {
     const runButton = document.createElement("button");
     runButton.type = "button";
     runButton.className = "btn btn-ghost btn-sm";
-    runButton.textContent = "Run";
-    runButton.addEventListener("click", () => runQueueItem(item.id));
+    if (item.article_md) {
+      runButton.textContent = "Open draft";
+      runButton.addEventListener("click", () => openQueueDraft(item));
+    } else {
+      runButton.textContent = "Run";
+      runButton.addEventListener("click", () => runQueueItem(item.id));
+    }
 
     const loadButton = document.createElement("button");
     loadButton.type = "button";
@@ -459,7 +472,7 @@ document.querySelector("#agent-run").addEventListener("click", async () => {
     const data = await readJson(response);
     await loadAgentStatus();
     await loadQueue();
-    showToast("Agent run finished. Check Queue and Substack drafts.", "done");
+    showToast("Agent run finished. Check the Queue for generated drafts.", "done");
   } catch (error) {
     showToast(error.message, "error");
   } finally {

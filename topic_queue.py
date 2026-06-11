@@ -50,6 +50,8 @@ def normalize_job(data: dict, *, item_id: str | None = None) -> dict:
         "last_run_at": data.get("last_run_at"),
         "substack_draft_id": data.get("substack_draft_id"),
         "substack_edit_url": data.get("substack_edit_url"),
+        "article_md": data.get("article_md"),
+        "images": data.get("images") if isinstance(data.get("images"), list) else [],
         "error": data.get("error"),
     }
     for key in AGENT_FIELDS:

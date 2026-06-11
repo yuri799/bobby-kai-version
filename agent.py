@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Editorial agent: research → topic pool → queue → Substack drafts.
+"""Editorial agent: research → topic pool → queue → article drafts.
 
 Examples:
   python agent.py status
@@ -191,6 +191,8 @@ def cmd_draft(*, force: bool = False) -> int:
                     "last_run_at": datetime.now(timezone.utc).isoformat(),
                     "substack_draft_id": draft.get("draft_id"),
                     "substack_edit_url": draft.get("edit_url"),
+                    "article_md": result.get("article_md"),
+                    "images": result.get("images") or [],
                     "error": None,
                 },
             )
@@ -228,11 +230,15 @@ def cmd_run(*, force: bool = False) -> int:
         return 0
 
     if research_due(config, force=force):
-        cmd_research(force=force)
+        research_result = cmd_research(force=force)
+        if research_result:
+            return research_result
     if draft_due(config, force=force) or force:
         if config["selection"].get("auto_pick", True):
-            cmd_pick(force=force)
-        cmd_draft(force=force)
+            pick_result = cmd_pick(force=force)
+            if pick_result:
+                return pick_result
+        return cmd_draft(force=force)
     else:
         log_event("run_skip", message="Draft step not due yet.")
     return 0
