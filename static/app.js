@@ -257,8 +257,7 @@ function renderImages(images) {
 }
 
 function updateQueueCount() {
-  const pending = queueItems.filter((item) => item.status === "pending").length;
-  queueCount.textContent = String(pending);
+  queueCount.textContent = String(queueItems.length);
 }
 
 function queueMeta(item) {
