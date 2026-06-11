@@ -90,7 +90,7 @@ function applyGenerationResult(data, successMessage) {
   exportsReady = data;
   updateCount();
   renderImages(data.images || []);
-  const substack = data.substack;
+  const substack = data.substack_draft;
   let message = successMessage;
   if (substack?.edit_url) {
     message += ` Open in Substack: ${substack.edit_url}`;

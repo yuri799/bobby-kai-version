@@ -11,7 +11,8 @@ def test_run_queue_item_stores_draft_without_substack(monkeypatch):
 
     def fake_run_generation_job(data, *, push_substack=False):
         push_values.append(push_substack)
-        return {"article_md": "# Draft\n\nBody", "images": []}
+        # "substack" is the HTML export string, not a draft dict
+        return {"article_md": "# Draft\n\nBody", "images": [], "substack": "<p>Body</p>"}
 
     monkeypatch.setattr(app, "update_item", fake_update_item)
     monkeypatch.setattr(app, "run_generation_job", fake_run_generation_job)

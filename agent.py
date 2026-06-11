@@ -183,7 +183,7 @@ def cmd_draft(*, force: bool = False) -> int:
         log_event("draft_start", message=item["topic"], queue_id=item["id"])
         try:
             result = run_generation_job(item, push_substack=push_substack)
-            draft = result.get("substack") or {}
+            draft = result.get("substack_draft") or {}
             update_item(
                 item["id"],
                 {

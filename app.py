@@ -265,7 +265,7 @@ def run_generation_job(data: dict, *, push_substack: bool = False) -> dict:
             subtitle=(data.get("subtitle") or "").strip() or None,
             audience=(data.get("audience") or "everyone").strip(),
         )
-        payload["substack"] = draft
+        payload["substack_draft"] = draft
     return payload
 
 
@@ -352,7 +352,7 @@ def _run_queue_item(item: dict) -> dict:
     update_item(item["id"], {"status": "running", "error": None})
     try:
         result = run_generation_job(item, push_substack=False)
-        draft = result.get("substack") or {}
+        draft = result.get("substack_draft") or {}
         update_item(
             item["id"],
             {
