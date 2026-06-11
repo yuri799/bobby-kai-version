@@ -114,22 +114,58 @@ button { cursor: pointer; border: none; background: none; }
 
 /* Toast */
 .toast {
-  min-height: 0;
-  margin: 0 0 16px;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  margin: 0;
   padding: 0;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
-  transition: all 0.2s;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
 }
 .toast:not(:empty) {
   padding: 12px 16px;
   border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(20, 33, 43, 0.14);
+  opacity: 1;
+  transform: none;
 }
 .toast.working { color: #8a6800; border-color: #f0e4b8; background: #fffbeb; }
 .toast.done { color: var(--accent); border-color: #b8dfd4; background: var(--accent-soft); }
 .toast.error { color: var(--danger); border-color: #f0c4c0; background: #fef2f1; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn.busy::after {
+  content: "";
+  width: 13px;
+  height: 13px;
+  margin-left: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
 /* Views */
 .view { display: none; }
@@ -415,9 +451,7 @@ textarea { resize: vertical; min-height: 100px; }
   margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .queue-item-meta {
   margin: 0;
@@ -536,6 +570,7 @@ textarea { resize: vertical; min-height: 100px; }
 
 @media (max-width: 720px) {
   .app { padding: 12px 12px 32px; }
+  .toast { left: 12px; right: 12px; max-width: none; }
   .topbar { gap: 12px; }
   .topbar-meta { width: 100%; margin-left: 0; order: 3; }
   .nav { flex: 1; }

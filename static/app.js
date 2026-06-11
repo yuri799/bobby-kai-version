@@ -21,9 +21,121 @@ function updateCount() {
   count.textContent = `${words(editor.value)} words`;
 }
 
+let toastTimer = null;
+
 function showToast(text, kind = "") {
-  toast.textContent = text;
+  clearTimeout(toastTimer);
   toast.className = `toast ${kind}`.trim();
+  toast.textContent = "";
+  if (kind === "working") {
+    const spinner = document.createElement("span");
+    spinner.className = "spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    toast.appendChild(spinner);
+  }
+  toast.appendChild(document.createTextNode(text));
+  if (kind === "done") toastTimer = setTimeout(hideToast, 5000);
+  if (kind === "error") toastTimer = setTimeout(hideToast, 10000);
+}
+
+function hideToast() {
+  toast.textContent = "";
+  toast.className = "toast";
+}
+
+function setBusy(button, busy) {
+  if (!button) return;
+  button.disabled = busy;
+  button.classList.toggle("busy", busy);
+}
+
+/* --- Job-finished notifications: chime + tab flash --- */
+const pageTitle = document.title;
+let flashTimer = null;
+let audioCtx = null;
+
+function primeAudio() {
+  // Must be called from a user gesture so the chime can play later.
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch { /* sound is best-effort */ }
+}
+
+function chime(success) {
+  if (!audioCtx) return;
+  try {
+    const notes = success ? [659.25, 880] : [311.13, 233.08];
+    notes.forEach((freq, index) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const start = audioCtx.currentTime + index * 0.18;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.12, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + 0.55);
+    });
+  } catch { /* sound is best-effort */ }
+}
+
+function setFavicon(dotColor) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 32;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#1a6b5c";
+  ctx.fillRect(0, 0, 32, 32);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("W", 16, 18);
+  if (dotColor) {
+    ctx.fillStyle = dotColor;
+    ctx.beginPath();
+    ctx.arc(24, 8, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  let link = document.querySelector("link[rel='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = canvas.toDataURL("image/png");
+}
+
+function stopTabFlash() {
+  if (flashTimer) clearInterval(flashTimer);
+  flashTimer = null;
+  document.title = pageTitle;
+  setFavicon(null);
+}
+
+function flashTab(message, success) {
+  stopTabFlash();
+  if (!document.hidden) return;
+  const alertTitle = `${success ? "✓" : "✗"} ${message}`;
+  document.title = alertTitle;
+  setFavicon(success ? "#2ecc71" : "#e85d2a");
+  let showAlert = false;
+  flashTimer = setInterval(() => {
+    showAlert = !showAlert;
+    document.title = showAlert ? pageTitle : alertTitle;
+  }, 1000);
+}
+
+window.addEventListener("focus", stopTabFlash);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) stopTabFlash();
+});
+
+function notifyJobDone(success, message) {
+  chime(success);
+  flashTab(message, success);
 }
 
 function switchView(name) {
@@ -103,7 +215,8 @@ async function generateDraft() {
   const payload = briefPayload();
   if (!payload.topic) throw new Error("Add a topic first.");
 
-  generateButton.disabled = true;
+  primeAudio();
+  setBusy(generateButton, true);
 
   const imageText = payload.image_count
     ? ` and ${payload.image_count} image${payload.image_count === 1 ? "" : "s"}`
@@ -119,9 +232,10 @@ async function generateDraft() {
     const data = await readJson(response);
     const successMessage = `Draft ready${data.images?.length ? ` with ${data.images.length} images` : ""}. Review it in the Draft tab.`;
     applyGenerationResult(data, successMessage);
+    notifyJobDone(true, "Draft ready");
     return data;
   } finally {
-    generateButton.disabled = false;
+    setBusy(generateButton, false);
   }
 }
 
@@ -187,7 +301,7 @@ function renderQueue() {
       runButton.addEventListener("click", () => openQueueDraft(item));
     } else {
       runButton.textContent = "Run";
-      runButton.addEventListener("click", () => runQueueItem(item.id));
+      runButton.addEventListener("click", () => runQueueItem(item.id, runButton));
     }
 
     const loadButton = document.createElement("button");
@@ -235,8 +349,10 @@ async function deleteQueueItem(itemId) {
   await loadQueue();
 }
 
-async function runQueueItem(itemId) {
-  document.querySelector("#queue-run-next").disabled = true;
+async function runQueueItem(itemId, button) {
+  primeAudio();
+  setBusy(document.querySelector("#queue-run-next"), true);
+  setBusy(button, true);
   showToast("Running queued topic…", "working");
   try {
     const response = await fetch(`/api/queue/${itemId}/run`, {
@@ -245,17 +361,21 @@ async function runQueueItem(itemId) {
     });
     const data = await readJson(response);
     applyGenerationResult(data, "Queued topic finished.");
+    notifyJobDone(true, "Draft ready");
     await loadQueue();
   } catch (error) {
     showToast(error.message, "error");
+    notifyJobDone(false, "Draft failed");
     await loadQueue();
   } finally {
-    document.querySelector("#queue-run-next").disabled = false;
+    setBusy(document.querySelector("#queue-run-next"), false);
+    setBusy(button, false);
   }
 }
 
 async function runNextQueueItem() {
-  document.querySelector("#queue-run-next").disabled = true;
+  primeAudio();
+  setBusy(document.querySelector("#queue-run-next"), true);
   showToast("Running next topic…", "working");
   try {
     const response = await fetch("/api/queue/run-next", {
@@ -264,12 +384,14 @@ async function runNextQueueItem() {
     });
     const data = await readJson(response);
     applyGenerationResult(data, "Next topic finished.");
+    notifyJobDone(true, "Draft ready");
     await loadQueue();
   } catch (error) {
     showToast(error.message, "error");
+    notifyJobDone(false, "Draft failed");
     await loadQueue();
   } finally {
-    document.querySelector("#queue-run-next").disabled = false;
+    setBusy(document.querySelector("#queue-run-next"), false);
   }
 }
 
@@ -299,6 +421,7 @@ form.addEventListener("submit", async (event) => {
     await generateDraft();
   } catch (error) {
     showToast(error.message, "error");
+    notifyJobDone(false, "Draft failed");
   }
 });
 
@@ -461,7 +584,8 @@ document.querySelector("#agent-config-form").addEventListener("submit", async (e
 
 document.querySelector("#agent-run").addEventListener("click", async () => {
   const button = document.querySelector("#agent-run");
-  button.disabled = true;
+  primeAudio();
+  setBusy(button, true);
   showToast("Running agent (research → pick → draft)…", "working");
   try {
     const response = await fetch("/api/agent/run", {
@@ -473,11 +597,14 @@ document.querySelector("#agent-run").addEventListener("click", async () => {
     await loadAgentStatus();
     await loadQueue();
     showToast("Agent run finished. Check the Queue for generated drafts.", "done");
+    notifyJobDone(true, "Agent run finished");
   } catch (error) {
     showToast(error.message, "error");
+    notifyJobDone(false, "Agent run failed");
   } finally {
-    button.disabled = false;
+    setBusy(button, false);
   }
 });
 
+setFavicon(null);
 loadQueue().catch((error) => showToast(error.message, "error"));
